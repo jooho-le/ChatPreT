@@ -1,0 +1,26 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Logs / coverage
+*.log
+npm-debug.log*
+yarn-error.log*
+coverage/
+
+# Envs (root and any subdir)
+.env
+.env.*
+**/.env
+
+# Node
+node_modules/
+**/node_modules/
+dist/
+build/
+
+# Server-specific (redundant safety)
+server/.env
+
