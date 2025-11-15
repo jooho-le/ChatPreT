@@ -10,6 +10,7 @@
     chat: document.getElementById('chat'),
     chatForm: document.getElementById('chatForm'),
     chatInput: document.getElementById('chatInput'),
+    btnSend: document.getElementById('btnSend'),
     referenceText: document.getElementById('referenceText'),
     wpm: document.getElementById('wpm'),
     paceGauge: document.getElementById('paceGauge'),
@@ -82,7 +83,8 @@
     segments: [], // {start,end,text}
     currentSeg: { start: 0, end: null, text: '' },
     lastVoiceTs: 0,
-    triggerWords: ['중간 피드백','잠깐','리허설 끝','여기까지'],
+    triggerWords: ['중간 피드백','잠깐','리허설 끝','여기까지','리허설끝','여기 까지','리허설 종료','끝'],
+    speechSupported: !!(window.SpeechRecognition || window.webkitSpeechRecognition),
   };
 
   // Utility
@@ -116,7 +118,32 @@
 
   // Audio setup and recording
   async function startAudio() {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+    } catch (err) {
+      if (err?.name === 'NotFoundError' || err?.name === 'DevicesNotFoundError') {
+        // Try to detect if any audio-input device exists
+        let haveInput = false;
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          haveInput = devices.some((d) => d.kind === 'audioinput');
+        } catch {}
+        if (!haveInput) {
+          addMessage('bot', '사용 가능한 마이크 장치를 찾을 수 없습니다. 시스템 설정에서 입력 장치를 연결/활성화한 뒤 다시 시도해 주세요.');
+          throw err;
+        }
+        // Device 목록은 있으나 현재 constraint가 맞지 않는 경우: 기본 설정으로 재시도
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch (err2) {
+          throw err2;
+        }
+      } else {
+        throw err;
+      }
+    }
+    if (!stream) throw new Error('mic_stream_unavailable');
     state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     state.sourceNode = state.audioCtx.createMediaStreamSource(stream);
     state.analyser = state.audioCtx.createAnalyser();
@@ -202,7 +229,10 @@
   let recog = null;
   function setupSpeechRecognition() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) return null;
+    if (!SR) {
+      addMessage('bot', '⚠️ 현재 브라우저에서는 Web Speech API(음성 인식)를 지원하지 않아 속도/자동 종료 기능을 사용할 수 없습니다. Chrome 최신 버전(HTTPS 또는 localhost)에서 열어주세요.');
+      return null;
+    }
     const r = new SR();
     r.lang = 'ko-KR';
     r.continuous = true;
@@ -224,7 +254,15 @@
         els.chatInput.value = interim;
       }
     };
-    r.onerror = (e) => console.debug('SpeechRecognition error', e);
+    r.onerror = (e) => {
+      console.debug('SpeechRecognition error', e);
+      const type = e?.error;
+      if (type === 'not-allowed' || type === 'service-not-allowed') {
+        addMessage('bot', '마이크 권한이 차단되어 음성 인식을 시작할 수 없습니다. 브라우저 주소창의 마이크 설정을 "허용"으로 바꾸고 다시 시도해 주세요.');
+      } else if (type === 'aborted') {
+        addMessage('bot', '음성 인식이 중단되었습니다. 탭을 다시 클릭하거나 리허설을 재시작해 주세요.');
+      }
+    };
     r.onend = () => {
       // Auto-restart during rehearsal
       if (state.isRehearsing) {
@@ -235,7 +273,9 @@
   }
 
   function checkTriggers(text) {
-    const hit = state.triggerWords.find(w => text.includes(w));
+    // Normalize(공백 제거/소문자) to catch variants like "리허설끝"
+    const cleaned = (text || '').replace(/\s+/g, '').toLowerCase();
+    const hit = state.triggerWords.find(w => cleaned.includes(w.replace(/\s+/g, '').toLowerCase()));
     if (!hit) return;
     if (hit === '리허설 끝' || hit === '여기까지') {
       // will stop and produce full report
@@ -662,6 +702,10 @@
     state.lastReport = report;
     renderReport(report);
 
+    if (!state.transcriptFull.trim()) {
+      addMessage('bot', '음성 인식 결과를 받지 못했습니다. 브라우저 마이크 권한과 지원 여부를 확인해 주세요. Chrome의 https/localhost 환경에서 가장 안정적으로 동작합니다.');
+    }
+
     addMessage('bot', '리허설이 종료되었습니다. 리포트를 확인하세요. 궁금한 점을 물어보세요!');
   }
 
@@ -785,4 +829,7 @@
 
   // Initial bot greeting (PREP hints)
   addMessage('bot', '안녕하세요 😊 발표 리허설 코치입니다. 먼저 PREP 인터뷰를 간단히 진행해볼까요?\n1) 발표 목적은 무엇인가요? (수업/공모전/IR/면접 등)\n2) 형태/장소는요? (무대/온라인/심사 등)\n3) 발표 시간은?\n4) 주제와 핵심 메시지는?\n5) 자신 있는 부분/보완하고 싶은 부분은?\n준비되면 "시작하겠습니다"라고 말해 주세요. 리허설 중에는 제가 개입하지 않으며, "중간 피드백"이라고 말하면 구간 피드백을 드립니다.');
+  if (!state.speechSupported) {
+    addMessage('bot', '⚠️ 참고: 현재 브라우저에서는 음성 인식 API를 지원하지 않습니다. Chrome/Edge 최신 버전을 사용해 https 또는 localhost 환경에서 열어야 속도·군말·자동 종료 기능을 사용할 수 있어요.');
+  }
 })();
