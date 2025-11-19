@@ -22,9 +22,18 @@
     prosodyBar: document.getElementById('prosodyBar'),
     alignment: document.getElementById('alignment'),
     levelMeter: document.getElementById('levelMeter'),
-    reportSummary: document.getElementById('reportSummary'),
     btnCopyReport: document.getElementById('btnCopyReport'),
     btnDownloadReport: document.getElementById('btnDownloadReport'),
+    reportScoreValue: document.getElementById('reportScoreValue'),
+    reportScoreMessage: document.getElementById('reportScoreMessage'),
+    reportMetricSpeed: document.getElementById('reportMetricSpeed'),
+    reportMetricFillers: document.getElementById('reportMetricFillers'),
+    reportMetricProsody: document.getElementById('reportMetricProsody'),
+    reportMetricAlign: document.getElementById('reportMetricAlign'),
+    reportCriteriaList: document.getElementById('reportCriteriaList'),
+    reportPointersList: document.getElementById('reportPointersList'),
+    reportNextLoop: document.getElementById('reportNextLoop'),
+    reportRecommendations: document.getElementById('reportRecommendations'),
     // Auth elements
     authAreaLoggedOut: document.getElementById('authAreaLoggedOut'),
     authAreaLoggedIn: document.getElementById('authAreaLoggedIn'),
@@ -448,28 +457,92 @@
   }
 
   function renderReport(report) {
-    const lines = [];
-    lines.push(`총점: ${report.score}/100`);
-    lines.push(`시간: ${fmt.time(report.durationSec)} / 단어: ${report.words}`);
-    const m = report.metrics;
-    lines.push(`- 속도: ${m.speedWPM} WPM`);
-    lines.push(`- 군말: ${m.fillersPerMin}/분`);
-    lines.push(`- 억양 다양성: ${m.prosodyVar}`);
-    lines.push(`- 자료 일치: ${m.alignment == null ? '-' : m.alignment + '%'}`);
-    lines.push('세부 진단표 (10점 만점)');
-    if (report.table) {
-      for (const r of report.table) lines.push(`• ${r.항목}: ${r.점수}/10 — ${r.근거}`);
+    if (!els.reportScoreValue) return;
+    const m = report.metrics || {};
+    els.reportScoreValue.textContent = report.score ?? '--';
+    els.reportScoreMessage.textContent = `시간 ${fmt.time(report.durationSec)} · 단어 ${report.words}`;
+    els.reportMetricSpeed.textContent = m.speedWPM != null ? `${m.speedWPM} WPM` : '-';
+    els.reportMetricFillers.textContent = m.fillersPerMin != null ? `${m.fillersPerMin}/분` : '-';
+    els.reportMetricProsody.textContent = m.prosodyVar != null ? `${m.prosodyVar}` : '-';
+    els.reportMetricAlign.textContent = m.alignment != null ? `${m.alignment}%` : '-';
+    renderCriteriaList(report.table);
+    renderPointerList(report.pointers);
+    renderRecommendationList(report.recommendations);
+    if (report.nextLoop && els.reportNextLoop) {
+      els.reportNextLoop.textContent = `${report.nextLoop.mode} — ${report.nextLoop.reason}`;
+    } else if (els.reportNextLoop) {
+      els.reportNextLoop.textContent = '리허설을 완료하면 추천 루프와 행동 가이드가 나타납니다.';
     }
-    lines.push('권장 수정 사항:');
-    for (const r of report.recommendations) lines.push(`• ${r}`);
-    if (report.pointers && report.pointers.length) {
-      lines.push('정확 포인트 코칭:');
-      for (const p of report.pointers) lines.push(`• ${p.range} "${p.quote}" → ${p.action}`);
+  }
+
+  function renderCriteriaList(rows) {
+    if (!els.reportCriteriaList) return;
+    const ul = els.reportCriteriaList;
+    ul.innerHTML = '';
+    if (!rows || !rows.length) {
+      const li = document.createElement('li');
+      li.textContent = '리허설 데이터를 수집하면 항목별 점수가 표시됩니다.';
+      ul.appendChild(li);
+      return;
     }
-    if (report.nextLoop) {
-      lines.push(`다음 루프 제안: ${report.nextLoop.mode} — ${report.nextLoop.reason}`);
+    rows.forEach((row) => {
+      const li = document.createElement('li');
+      const title = document.createElement('strong');
+      title.textContent = row.항목;
+      const score = document.createElement('span');
+      score.style.display = 'block';
+      score.style.color = 'var(--muted)';
+      score.style.fontSize = '12px';
+      score.textContent = `${row.점수}/10 · ${row.근거}`;
+      li.appendChild(title);
+      li.appendChild(score);
+      ul.appendChild(li);
+    });
+  }
+
+  function renderPointerList(list) {
+    if (!els.reportPointersList) return;
+    const ol = els.reportPointersList;
+    ol.innerHTML = '';
+    if (!list || !list.length) {
+      const li = document.createElement('li');
+      li.textContent = '타임스탬프와 함께 개선 포인트가 여기에 표시됩니다.';
+      ol.appendChild(li);
+      return;
     }
-    els.reportSummary.textContent = lines.join('\n');
+    list.forEach((item) => {
+      const li = document.createElement('li');
+      const title = document.createElement('div');
+      title.style.fontWeight = '600';
+      title.textContent = item.range || '구간 미확인';
+      const quote = document.createElement('div');
+      quote.style.color = 'var(--muted)';
+      quote.style.fontSize = '12px';
+      quote.textContent = item.quote ? `“${item.quote}”` : '';
+      const action = document.createElement('div');
+      action.textContent = item.action || '';
+      li.appendChild(title);
+      if (quote.textContent) li.appendChild(quote);
+      if (action.textContent) li.appendChild(action);
+      ol.appendChild(li);
+    });
+  }
+
+  function renderRecommendationList(list) {
+    if (!els.reportRecommendations) return;
+    const ul = els.reportRecommendations;
+    ul.innerHTML = '';
+    if (!list || !list.length) {
+      const li = document.createElement('li');
+      li.textContent = '리허설 종료 후 권장 수정 사항이 안내됩니다.';
+      ul.appendChild(li);
+      return;
+    }
+    list.forEach((item) => {
+      const li = document.createElement('li');
+      li.textContent = item;
+      ul.appendChild(li);
+    });
   }
 
   function buildDetailedTable(m) {

@@ -38,17 +38,58 @@ body {
 .dot { width: 10px; height: 10px; border-radius: 50%; background: #6b7385; box-shadow: 0 0 0 2px rgba(91,140,255,0.0);}
 .dot.live { background: #ff5f6d; box-shadow: 0 0 0 3px rgba(255,95,109,0.25); }
 
-.layout { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; padding: 16px; }
-.panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; min-height: calc(100vh - 160px); }
-.panel-left { display: grid; grid-template-rows: auto 1fr auto; }
-.panel-right { padding: 16px; }
+.layout { display: flex; flex-direction: column; gap: 16px; padding: 16px; }
+.row { display: grid; gap: 16px; }
+.top-row { grid-template-columns: 1.2fr 1fr; }
+.bottom-row { grid-template-columns: 2fr 1fr; }
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+.panel-left { display: flex; flex-direction: column; gap: 12px; }
+.panel-report { display: flex; flex-direction: column; gap: 12px; }
+.panel-wide { display: flex; flex-direction: column; gap: 12px; }
+.panel-guide { display: flex; flex-direction: column; }
+.chat-panel { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+.chat-hero {
+  padding: 18px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: linear-gradient(120deg, #151515, #0d0d0d);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.chat-hero h2 { margin: 0; font-size: 22px; }
+.chat-hero p { margin: 0; color: var(--muted); }
+.hero-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.hero-tags span { border: 1px solid rgba(255,255,255,0.15); border-radius: 999px; padding: 4px 10px; font-size: 12px; color: var(--muted); }
+.tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.guide-card {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #141414;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.guide-card h3 { margin: 4px 0; font-size: 18px; }
+.guide-card .lead { margin: 0; color: var(--muted); }
+.chip-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 999px; padding: 4px 10px; font-size: 12px; }
 
-.ref-box { padding: 12px 12px 0 12px; }
-details { background: var(--elev); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; }
-details summary { cursor: pointer; color: var(--muted); margin: 4px 0 8px; }
-textarea#referenceText { width: 100%; height: 96px; resize: vertical; background: transparent; color: var(--text); border: 1px dashed var(--border); border-radius: 8px; padding: 8px; }
+.ref-box.simple { padding: 0 18px 0; display: flex; flex-direction: column; gap: 4px; }
+.ref-box.simple label { font-size: 12px; color: var(--muted); }
+.ref-box.simple textarea { width: 100%; height: 80px; resize: vertical; background: #0f0f0f; color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; }
+.ref-box.simple.compact { padding-bottom: 0; }
 
-.chat { padding: 12px; overflow: auto; display: flex; flex-direction: column; gap: 10px; }
+.chat { padding: 12px; overflow: auto; display: flex; flex-direction: column; gap: 10px; flex: 1; border: 1px solid var(--border); border-radius: 12px; background: #0f0f0f; min-height: 320px; }
 .msg { display: flex; gap: 10px; }
 .msg .bubble { max-width: 78%; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); }
 .msg.user { justify-content: flex-end; }
@@ -79,9 +120,24 @@ textarea#referenceText { width: 100%; height: 96px; resize: vertical; background
 
 .live-audio { margin-top: 16px; background: #0f0f0f; border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: grid; place-items: center; }
 
-.report { margin-top: 16px; }
-.report-summary { background: #0f0f0f; border: 1px solid var(--border); border-radius: 12px; padding: 12px; color: var(--text); min-height: 64px; }
-.report-actions { display: flex; gap: 8px; margin-top: 8px; }
+.report { margin-top: 0; display: flex; flex-direction: column; gap: 12px; }
+.report-inline { border: 1px solid var(--border); border-radius: 12px; padding: 12px; background: #0f0f0f; }
+.report-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.report-card { background: #0f0f0f; border: 1px solid var(--border); border-radius: 12px; padding: 14px; min-height: 120px; }
+.report-card h4 { margin: 0 0 8px; font-size: 14px; color: #d6dcf0; }
+.report-card.score { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px; }
+.score-circle { width: 120px; height: 120px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); display: grid; place-items: center; font-size: 36px; font-weight: 700; }
+.score-circle small { display: block; font-size: 12px; font-weight: 400; color: var(--muted); }
+#reportScoreMessage { margin: 0; color: var(--muted); font-size: 13px; }
+.report-card.metrics dl { margin: 0; display: grid; gap: 6px; }
+.report-card.metrics dt { font-size: 12px; color: var(--muted); }
+.report-card.metrics dd { margin: 0; font-size: 16px; }
+.criteria-list, .pointer-list, .recommend-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.criteria-list li { font-size: 13px; line-height: 1.4; border-left: 2px solid rgba(255,255,255,0.1); padding-left: 8px; }
+.pointer-list li { font-size: 13px; line-height: 1.5; border-bottom: 1px dashed rgba(255,255,255,0.08); padding-bottom: 6px; }
+.pointer-list li:last-child { border-bottom: none; }
+.report-card.next .recommend-list li { font-size: 13px; color: var(--muted); }
+.report-actions { display: flex; gap: 8px; justify-content: flex-end; }
 
 .app-footer { padding: 12px 16px; color: var(--muted); border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
 .foot-note { font-size: 12px; }
@@ -102,7 +158,7 @@ textarea#referenceText { width: 100%; height: 96px; resize: vertical; background
 .user-menu button, .user-menu a { width: 100%; text-align: left; }
 
 @media (max-width: 1000px) {
-  .layout { grid-template-columns: 1fr; }
-  .panel { min-height: auto; }
+  .top-row, .bottom-row { grid-template-columns: 1fr; }
   .cards { grid-template-columns: 1fr; }
+  .report-grid { grid-template-columns: 1fr; }
 }
